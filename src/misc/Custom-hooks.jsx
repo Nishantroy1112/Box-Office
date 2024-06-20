@@ -1,5 +1,7 @@
 import { useEffect, useReducer, useState } from "react";
 import { apiGet } from "./config";
+import { useRef } from "react";
+import { useCallback } from "react";
 
 function showsReduser(prevState, action) {
   switch (action.type) {
@@ -31,10 +33,13 @@ export function useLastQuery(key = "lastQuery") {
     const persisted = sessionStorage.getItem(key);
     return persisted ? JSON.parse(persisted) : "";
   });
-  const setPersistedInput = (newState) => {
-    setInput(newState);
-    sessionStorage.setItem(key, JSON.stringify(newState));
-  };
+  const setPersistedInput = useCallback(
+    (newState) => {
+      setInput(newState);
+      sessionStorage.setItem(key, JSON.stringify(newState));
+    },
+    [key]
+  );
   return [Input, setPersistedInput];
 }
 const Reducer = (prevState, action) => {
@@ -81,4 +86,25 @@ export function useShow(showId) {
     };
   }, [showId]);
   return state;
+}
+export function useWhyDidYouUpdate(name, props) {
+  const previousProps = useRef();
+  useEffect(() => {
+    if (previousProps.current) {
+      const allKeys = Object.keys({ ...previousProps.current, ...props });
+      const changesObj = {};
+      allKeys.forEach((key) => {
+        if (previousProps.current[key] !== props[key]) {
+          changesObj[key] = {
+            from: previousProps.current[key],
+            to: props[key],
+          };
+        }
+      });
+      if (Object.keys(changesObj).length) {
+        console.log("[why-did-you-update]", name, changesObj);
+      }
+    }
+    previousProps.current = props;
+  });
 }
